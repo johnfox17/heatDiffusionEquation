@@ -12,7 +12,7 @@ L = 10
 dx = 0.1
 dt = 0.001
 t0 = 0
-tf = 10
+tf = 1.5
 numTimeSteps =int(tf/dt) 
 xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
@@ -76,9 +76,9 @@ def main():
     KInvPDDO = inv(csc_matrix(np.identity(pddo.numNodes)-np.multiply(dt,pddo.sysMatrix))).toarray()
 
     for iTimeStep in range(numTimeSteps):
-        initialConditionPDDO = np.matmul(KInvPDDO, initialConditionPDDO)
         initialConditionPDDO[0] = 0
         initialConditionPDDO[numNodes-1] = 0
+        initialConditionPDDO = np.matmul(KInvPDDO, initialConditionPDDO)
         if iTimeStep == numTimeSteps-1:
             SOL_PDDO = initialConditionPDDO
 
