@@ -12,7 +12,7 @@ L = 10
 dx = 0.1
 dt = 0.001
 t0 = 0
-tf = 1.5
+tf = 5
 numTimeSteps =int(tf/dt) 
 xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
@@ -71,10 +71,15 @@ def main():
     ###############################
     #Solving with PDDO
     ###############################
-    identity = np.identity(numNodes)
-
-    KInvPDDO = inv(csc_matrix(np.identity(pddo.numNodes)-np.multiply(dt,pddo.sysMatrix))).toarray()
-
+    #identity = np.identity(numNodes)
+    #KInvPDDO = inv(csc_matrix(np.identity(pddo.numNodes)-np.multiply(dt,pddo.sysMatrix))).toarray()
+    identity = np.identity(numNodes-2)
+    np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/1.csv', pddo.sysMatrix, delimiter=",")
+    pddo.sysMatrix[1:numNodes-1,0:numNodes] = np.multiply(dt,pddo.sysMatrix[1:numNodes-1,0:numNodes])
+    np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/2.csv', pddo.sysMatrix, delimiter=",")
+    pddo.sysMatrix[1:numNodes-1,1:numNodes-1] = identity - pddo.sysMatrix[1:numNodes-1,1:numNodes-1]
+    np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/3.csv', pddo.sysMatrix, delimiter=",")
+    KInvPDDO = inv(csc_matrix(pddo.sysMatrix)).toarray()
     for iTimeStep in range(numTimeSteps):
         initialConditionPDDO[0] = 0
         initialConditionPDDO[numNodes-1] = 0
