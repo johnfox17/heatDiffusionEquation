@@ -5,7 +5,7 @@ from scipy.sparse import csc_matrix
 from scipy.sparse import spdiags
 from scipy.integrate import solve_ivp, RK45
 
-import PDDO as PDDO
+import PDDODirichletBC as PDDO
 
 #Defining constants
 L = 10
