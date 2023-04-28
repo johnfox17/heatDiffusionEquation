@@ -12,7 +12,7 @@ L = 10.2
 dx = 0.1
 dt = 0.01
 t0 = 0
-tf = 20
+tf = 120
 numTimeSteps =int(tf/dt) 
 xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
@@ -76,13 +76,12 @@ def main():
 
     
     
-    np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/sysMatrixNeumann.csv', pddo.sysMatrix, delimiter=",")
     figure, axis = plt.subplots()
     axis.plot(xCoords[1:numNodes-1], initialCondition[1:numNodes-1], label='Initial Condition')
     axis.plot(xCoords[1:numNodes-1], SOL_PDDO[1:numNodes-1], marker='*',label='PDDO')
     axis.grid()
     axis.legend()
-    axis.set_title('Neumann BC')
+    axis.set_title('Heat Diffusion Eq Left BC Dirichlet and Right Neumann (120 sec)')
     axis.set_xlabel('x-axis')
     axis.set_ylabel('Heat Magnitude')
     plt.show()
