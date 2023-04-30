@@ -6,6 +6,7 @@ from scipy.sparse import spdiags
 from scipy.integrate import solve_ivp, RK45
 
 import PDDOLeftDirichletRightNeumannBC as PDDO
+import FDLeftDirichletRightNeumannBC as FD
 
 #Defining constants
 L = 10.2
@@ -42,7 +43,7 @@ def main():
     diffOrderBC = np.array([1])
     bVecBC = np.array([0,1,0])
     nodesBC = np.array([numNodes-1])
-
+    
     
     pddo = PDDO.PDDO(numNodes, horizon, bVec, diffOrder, dx, nodesBC, numBC, BC, diffOrderBC, bVecBC)
     #PDDO
@@ -73,9 +74,8 @@ def main():
         initialConditionPDDO = np.matmul(KInvPDDO, initialConditionPDDO)
         if iTimeStep == numTimeSteps-1:
             SOL_PDDO = initialConditionPDDO
+    
 
-    
-    
     figure, axis = plt.subplots()
     axis.plot(xCoords[1:numNodes-1], initialCondition[1:numNodes-1], label='Initial Condition')
     axis.plot(xCoords[1:numNodes-1], SOL_PDDO[1:numNodes-1], marker='*',label='PDDO')
@@ -84,13 +84,12 @@ def main():
     axis.set_title('Heat Diffusion Eq Left BC Dirichlet and Right Neumann (120 sec)')
     axis.set_xlabel('x-axis')
     axis.set_ylabel('Heat Magnitude')
-    plt.show()
-    a = input('').split(" ")[0]
+    plt.show()'''
 
     ###############################
     #Solving with FD
     ###############################
-    SOL_FD = solve_ivp(calcDuDt, [t0,tf], initialConditionFD, RK45)
+    SOL_FD = solve_ivp(fd.calcDuDt, [t0,tf], initialConditionFD, RK45)
     
     ###############################
     #Calculating absolute error
