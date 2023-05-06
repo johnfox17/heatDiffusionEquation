@@ -52,23 +52,14 @@ class PDDO:
 
     def calcSysMatrix(self):
         kappa = self.kappa
-        kappa2 = self.kappa2
         numNodes = self.numNodes
         familyMembers = self.familyMembers
         xis = self.xis
         dx = self.dx
         bVec = self.bVec
-        numBC = self.numBC
-        nodesBC = self.nodesBC
-        bVecBC = self.bVecBC
 
-        #sysMatrix = np.zeros([self.numNodes + self.numBC,self.numNodes + self.numBC])
         sysMatrix = np.zeros([numNodes, numNodes])
         
-
-        #Left Boundary Condition Dirichlet 
-        sysMatrix[0][0] = 1
-        sysMatrix[0][1:] = 0
         #Differential Equation Part
         for iNode in range(1, numNodes-1):
             family = familyMembers[iNode]
@@ -84,13 +75,27 @@ class PDDO:
                 currentFamilyMember = family[iFamilyMember]
                 currentXi = xi[iFamilyMember]
                 pList = np.array([1, currentXi, (currentXi)**2])
-                weight = np.exp(-4*(np.absolute(currentXi))**2);
+                weight = np.exp(-4*(np.absolute(currentXi))**2)
                 sysMatrix[iNode][ currentFamilyMember] = kappa*weight*np.inner(solve(diffMat,bVec),pList)*dx
+        self.sysMatrix = sysMatrix
+    
+    def enforceLeftBoundaryConditions(self):
+        sysMatrix = self.sysMatrix
+        sysMatrix[0,0] = 1
+        self.sysMatrix = sysMatrix
 
-        #Boundary Condition
-        #iNode = iNode -1
+    def enforceRightBoundaryConditions(self):
+        familyMembers = self.familyMembers
+        xis = self.xis
+        dx = self.dx
+        numBC = self.numBC
+        nodesBC = self.nodesBC
+        bVecBC = self.bVecBC
+        sysMatrix = self.sysMatrix
+        kappa2 = self.kappa2
+
         for iNodeBC in range(numBC):
-            iNode = iNode + 1
+            iNode = nodesBC[iNodeBC]
             family = familyMembers[nodesBC[iNodeBC]]
             xi = xis[nodesBC[iNodeBC]]
             diffMat = np.zeros([3,3])
@@ -104,36 +109,55 @@ class PDDO:
                 currentFamilyMember = family[iFamilyMember]
                 currentXi = xi[iFamilyMember]
                 pList = np.array([1, currentXi, currentXi**2])
-                weight = np.exp(-4*(np.absolute(currentXi))**2);
-                sysMatrix[iNode][ currentFamilyMember] = kappa2*weight*np.inner(solve(diffMat,bVecBC),pList)*dx
-        #sysMatrix[self.numNodes-1][self.numNodes-1] = 1
-        #sysMatrix[0][1:] = 0 
+                weight = np.exp(-4*(np.absolute(currentXi))**2)
+                sysMatrix[iNode][ currentFamilyMember] = kappa2*weight\
+                        *np.inner(solve(diffMat,bVecBC),pList)*dx
+        
         self.sysMatrix = sysMatrix
+
+
+    def enforceBoundaryConditionsRHS(self, initialCondition):
+        dt = self.dt
+        BC = self.BC
+        initialCondition[0] = 0 
+        initialCondition[-1] = BC
+        self.RHS = initialCondition
     
+    def calcDuDt(self):
+        sysMatrix = self.sysMatrix
+        numNodes = self.numNodes
+        dt = self.dt
+        dx = self.dx
+        kappa = self.kappa
+        sysMatrixAux = np.zeros([numNodes,numNodes])
+        identity = np.identity(numNodes-2)
+        sysMatrixAux[1:numNodes-1,0:numNodes] = np.multiply(dt,self.sysMatrix[1:numNodes-1,0:numNodes])
+        sysMatrixAux[1:numNodes-1,1:numNodes-1] = identity - sysMatrixAux[1:numNodes-1,1:numNodes-1]
+        sysMatrix[1:numNodes-1,:] = sysMatrixAux[1:numNodes-1,:] 
+        
+        self.dudt = self.sysMatrix
+
     def solve(self, tf, initialCondition):
         numNodes = self.numNodes
         dt = self.dt
         BC = self.BC
         numTimeSteps =int(tf/dt)
-
         PDDO.findFamilyMembers(self)
         PDDO.calcXis(self)
         PDDO.calcSysMatrix(self)
-        sysMatrix = self.sysMatrix
+        PDDO.enforceLeftBoundaryConditions(self)
+        PDDO.enforceRightBoundaryConditions(self)
+        PDDO.calcDuDt(self)
+        PDDO.enforceBoundaryConditionsRHS(self, initialCondition)
+        RHS = self.RHS
+        invDUDT = inv(csc_matrix(self.dudt)).toarray()
         
-        identity = np.identity(numNodes-2)
-        sysMatrix[1:numNodes-1,0:numNodes] = np.multiply(dt,sysMatrix[1:numNodes-1,0:numNodes])
-        sysMatrix[1:numNodes-1,1:numNodes-1] = identity - sysMatrix[1:numNodes-1,1:numNodes-1]
-        KInvPDDO = inv(csc_matrix(sysMatrix)).toarray()
         for iTimeStep in range(numTimeSteps):
-            initialCondition[0] = 0.0
-            initialCondition[-1] = BC[0]
-            initialCondition = np.matmul(KInvPDDO, initialCondition)
+            RHS = np.matmul(invDUDT, initialCondition)
+            PDDO.enforceBoundaryConditionsRHS(self, RHS)
             if iTimeStep == numTimeSteps-1:
-                SOL_PDDO = initialCondition
-
-        #print('Here')
+                SOL_PDDO = RHS
+            initialCondition = self.RHS
+        #print(RHS)
         #a = input('').split(" ")[0]
-        #pddo.adjustSysMatrixBoundaryNodes()
-
         self.SOL_PDDO = SOL_PDDO

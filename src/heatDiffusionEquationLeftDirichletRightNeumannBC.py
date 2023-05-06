@@ -14,7 +14,7 @@ L = 10.0
 dx = 0.1
 dt = 0.01
 t0 = 0
-tf = 120
+tf = 50
 numTimeSteps =int(tf/dt) 
 xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
@@ -48,7 +48,7 @@ def main():
     bVec = np.array([0,0,2])
     diffOrder = 2
     numBC = 1
-    BC = np.array([0.01])
+    BC = np.array([-0.01])
     diffOrderBC = np.array([1])
     bVecBC = np.array([0,1,0])
     nodesBC = np.array([numNodes-1])
@@ -66,21 +66,10 @@ def main():
     fd = FD.FD(numNodes, dx, dt, kappa, kappa2, BC)
     fd.solve(tf, initialConditionFD)
 
-    figure, axis = plt.subplots()
-    axis.plot(xCoords[1:numNodes-1], initialCondition[1:numNodes-1], label='Initial Condition')
-    axis.plot(xCoords[1:numNodes-1], SOL_PDDO[1:numNodes-1], marker='*',label='PDDO')
-    axis.grid()
-    axis.legend()
-    axis.set_title('Heat Diffusion Eq Left BC Dirichlet and Right Neumann (120 sec)')
-    axis.set_xlabel('x-axis')
-    axis.set_ylabel('Heat Magnitude')
-    plt.show()'''
 
     figure, axis = plt.subplots()
-    #axis.plot(xCoords[1:numNodes-1], initialCondition[1:numNodes-1], label='Initial Condition')
-    #axis.plot(xCoords[1:numNodes-1], fd.SOL_FD[1:numNodes-1], marker='*',label='FD')
-    #axis.plot(xCoords[1:99], initialCondition[1:99], label='Initial Condition')
-    axis.plot(xCoords[1:99], pddo.SOL_PDDO[1:99], marker='*',label='FD')
+    axis.plot(xCoords[1:99], fd.SOL_FD[1:99], marker='*',label='FD')
+    axis.plot(xCoords[1:99], pddo.SOL_PDDO[1:99], marker='*',label='PDDO')
     axis.grid()
     axis.legend()
     axis.set_title('Neumann BC')
