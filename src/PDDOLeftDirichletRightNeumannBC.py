@@ -20,7 +20,7 @@ class PDDO:
         self.diffOrder = diffOrder
         self.bVec = bVec
         self.numBC = numBC
-        self.BC = BC
+        self.BC = BC[0]
         self.nodesBC = nodesBC
         self.diffOrderBC = diffOrderBC
         self.bVecBC = bVecBC
@@ -54,12 +54,13 @@ class PDDO:
         kappa = self.kappa
         numNodes = self.numNodes
         familyMembers = self.familyMembers
-        xis = self.xis
         dx = self.dx
         bVec = self.bVec
 
         sysMatrix = np.zeros([numNodes, numNodes])
-        
+         
+        PDDO.calcXis(self)
+        xis = self.xis
         #Differential Equation Part
         for iNode in range(1, numNodes-1):
             family = familyMembers[iNode]
@@ -79,8 +80,7 @@ class PDDO:
                 sysMatrix[iNode][ currentFamilyMember] = kappa*weight*np.inner(solve(diffMat,bVec),pList)*dx
         self.sysMatrix = sysMatrix
     
-    def enforceLeftBoundaryConditions(self):
-        sysMatrix = self.sysMatrix
+    def enforceLeftBoundaryConditions(self, sysMatrix):
         sysMatrix[0,0] = 1
         self.sysMatrix = sysMatrix
 
@@ -124,17 +124,23 @@ class PDDO:
         self.RHS = initialCondition
     
     def calcDuDt(self):
-        sysMatrix = self.sysMatrix
+        #sysMatrix = self.sysMatrix
         numNodes = self.numNodes
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
-        sysMatrixAux = np.zeros([numNodes,numNodes])
+        PDDO.calcSysMatrix(self)
+        PDDO.enforceRightBoundaryConditions(self)
+        sysMatrix = np.zeros([numNodes,numNodes])
         identity = np.identity(numNodes-2)
-        sysMatrixAux[1:numNodes-1,0:numNodes] = np.multiply(dt,self.sysMatrix[1:numNodes-1,0:numNodes])
-        sysMatrixAux[1:numNodes-1,1:numNodes-1] = identity - sysMatrixAux[1:numNodes-1,1:numNodes-1]
-        sysMatrix[1:numNodes-1,:] = sysMatrixAux[1:numNodes-1,:] 
-        
+        sysMatrix[1:numNodes,0:numNodes] = np.multiply(dt,self.sysMatrix[1:numNodes,0:numNodes])
+        sysMatrix[1:numNodes-1,1:numNodes-1] = identity - sysMatrix[1:numNodes-1,1:numNodes-1]
+        sysMatrix[:,0] = -sysMatrix[:,0]
+        sysMatrix[0:numNodes-1,numNodes-1] = -sysMatrix[0:numNodes-1,numNodes-1]
+        PDDO.enforceLeftBoundaryConditions(self, sysMatrix)
+        #np.savetxt('C:\\Users\\docta\\Documents\\Thesis\\heatDiffusionEquation\\data\\sysMatrix6.csv', self.sysMatrix, delimiter=",")
+        #print('Here')
+        #a = input('').split(" ")[0]
         self.dudt = self.sysMatrix
 
     def solve(self, tf, initialCondition):
@@ -143,12 +149,9 @@ class PDDO:
         BC = self.BC
         numTimeSteps =int(tf/dt)
         PDDO.findFamilyMembers(self)
-        PDDO.calcXis(self)
-        PDDO.calcSysMatrix(self)
-        PDDO.enforceLeftBoundaryConditions(self)
-        PDDO.enforceRightBoundaryConditions(self)
         PDDO.calcDuDt(self)
         PDDO.enforceBoundaryConditionsRHS(self, initialCondition)
+        
         RHS = self.RHS
         invDUDT = inv(csc_matrix(self.dudt)).toarray()
         

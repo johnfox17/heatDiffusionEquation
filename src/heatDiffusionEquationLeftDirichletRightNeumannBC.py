@@ -16,7 +16,7 @@ dt = 0.01
 t0 = 0
 tf = 50
 numTimeSteps =int(tf/dt) 
-xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
+xCoords = np.arange(-L/2,L/2+2*dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
 kappa = 0.04
 #kappa = 0.1
@@ -31,14 +31,13 @@ def calcInitialCondition():
 
 
 def main():
-    
     ##############################
     #Initial Condition
     ##############################
     initialCondition = calcInitialCondition()
     initialConditionPDDO = initialCondition
     initialConditionFD = initialCondition
-
+    
     ##############################
     #PDDO Setup
     ##############################
@@ -48,7 +47,7 @@ def main():
     bVec = np.array([0,0,2])
     diffOrder = 2
     numBC = 1
-    BC = np.array([-0.01])
+    BC = np.array([0.01])
     diffOrderBC = np.array([1])
     bVecBC = np.array([0,1,0])
     nodesBC = np.array([numNodes-1])

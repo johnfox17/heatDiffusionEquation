@@ -33,33 +33,47 @@ class FD:
     def enforceRightBoundaryConditions(self): 
         numNodes = self.numNodes
         dx = self.dx
+        dt = self.dt
         kMat = self.kMat
-        kMat[numNodes-1, -2] = 2
-        kMat[numNodes-1, -1] = -2
+        kMat = kMat.astype(np.float)
+        kappa = self.kappa
+        kappa2 = self.kappa2
+        kMat[numNodes-1, -3] = -2*kappa*dt/(kappa2*dx**2)
+        kMat[numNodes-1, -2] = 0
+        kMat[numNodes-1, -1] = 2*kappa*dt/(kappa2*dx**2)
         self.kMat = kMat
 
     def calcDuDt(self):
-        numNodes = self.numNodes
+        numNodes = self.numNodes 
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
         FD.createKMatrix(self)
         kMat = np.zeros([numNodes,numNodes])
         FD.enforceRightBoundaryConditions(self)
-        identity = np.identity(numNodes-1)
-        kMat[1:numNodes,0:numNodes] = np.multiply(kappa/dx**2, np.multiply(dt,self.kMat[1:numNodes,0:numNodes]))
-        kMat[1:numNodes,1:numNodes] = identity - kMat[1:numNodes,1:numNodes]
+        identity = np.identity(numNodes-2)
+        kMat[1:numNodes,0:numNodes] = np.multiply(kappa/dx**2, np.multiply(dt,self.kMat[1:numNodes,:]))
+        kMat[1:numNodes-1,1:numNodes-1] = identity - kMat[1:numNodes-1,1:numNodes-1]
+        kMat[1,0] = -kMat[1,0]
+        kMat[numNodes-2,numNodes-1] = -kMat[numNodes-2,numNodes-1]
         FD.enforceLeftBoundaryConditions(self, kMat)
         self.dudt = self.kMat
 
-    def enforceBoundaryConditionsRHS(self, initialCondition):
+    def enforceBoundaryConditionsRHS(self, initialCondition, timeIntegrationFlag):
+        numNodes = self.numNodes
         dt = self.dt
         dx = self.dx
         BC = self.BC
         kappa = self.kappa
         kappa2 = self.kappa2
-        initialCondition[-1] = 2*kappa*dt*BC/(kappa2*dx)
-        self.RHS = initialCondition
+        if timeIntegrationFlag:
+            RHS = initialCondition
+            RHS[-1] = 2*dt*BC*kappa/(kappa2*dx)
+        else:
+            RHS = np.zeros([numNodes])
+            RHS[0:numNodes]=  initialCondition[:]
+            RHS[-1] = 2*dt*BC*kappa/(kappa2*dx)
+        self.RHS = RHS
 
 
     def solve(self, tf, initialCondition):
@@ -68,13 +82,15 @@ class FD:
         numTimeSteps =int(tf/dt)
 
         FD.calcDuDt(self)
+        #np.savetxt('C:\\Users\\docta\\Documents\\Thesis\\heatDiffusionEquation\\data\\dudt.csv', self.dudt, delimiter=",")
+        #print('Here')
+        #a = input('').split(" ")[0]
         invDUDT = inv(csc_matrix(self.dudt)).toarray() 
-        FD.enforceBoundaryConditionsRHS(self, initialCondition)
+        FD.enforceBoundaryConditionsRHS(self, initialCondition, False)
         RHS = self.RHS
-        
         for iTimeStep in range(numTimeSteps):
             RHS = np.matmul(invDUDT, RHS)
-            FD.enforceBoundaryConditionsRHS(self, RHS)
+            FD.enforceBoundaryConditionsRHS(self, RHS, True)
             if iTimeStep == numTimeSteps-1:
                 SOL_FD = RHS
             RHS = self.RHS
