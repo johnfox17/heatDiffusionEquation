@@ -93,8 +93,8 @@ def main():
     plt.show()
 
 
-    #a = input('').split(" ")[0]
     #np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/sysMatrix.csv', sysMatrix, delimiter=",")
+    #a = input('').split(" ")[0]
     print('Done')
 
 if __name__ == "__main__":

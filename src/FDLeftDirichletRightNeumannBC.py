@@ -34,13 +34,14 @@ class FD:
     def enforceRightBoundaryConditions(self): 
         numNodes = self.numNodes
         dx = self.dx
+        dt = self.dt
         kMat = self.kMat
         kMat[numNodes-1, -2] = -1
         kMat[numNodes-1, -1] = 1
         self.kMat = kMat
 
     def calcDuDt(self):
-        numNodes = self.numNodes
+        numNodes = self.numNodes 
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
@@ -56,6 +57,7 @@ class FD:
         self.dudt = kMatAux
 
     def enforceBoundaryConditionsRHS(self, initialCondition):
+        numNodes = self.numNodes
         dt = self.dt
         dx = self.dx
         BC = self.BC
@@ -71,7 +73,6 @@ class FD:
         dt = self.dt
         numTimeSteps =int(tf/dt)
         FD.createKMatrix(self)
-
         FD.enforceLeftBoundaryConditions(self)
         FD.enforceRightBoundaryConditions(self)
         FD.calcDuDt(self)

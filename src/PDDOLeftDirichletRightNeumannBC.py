@@ -20,7 +20,7 @@ class PDDO:
         self.diffOrder = diffOrder
         self.bVec = bVec
         self.numBC = numBC
-        self.BC = BC
+        self.BC = BC[0]
         self.nodesBC = nodesBC
         self.diffOrderBC = diffOrderBC
         self.bVecBC = bVecBC
@@ -54,12 +54,13 @@ class PDDO:
         kappa = self.kappa
         numNodes = self.numNodes
         familyMembers = self.familyMembers
-        xis = self.xis
         dx = self.dx
         bVec = self.bVec
 
         sysMatrix = np.zeros([numNodes, numNodes])
-        
+         
+        PDDO.calcXis(self)
+        xis = self.xis
         #Differential Equation Part
         for iNode in range(1, numNodes-1):
             family = familyMembers[iNode]
@@ -130,13 +131,15 @@ class PDDO:
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
+        PDDO.calcSysMatrix(self)
+        PDDO.enforceRightBoundaryConditions(self)
         sysMatrixAux = np.zeros([numNodes,numNodes])
         identity = np.identity(numNodes-2)
-        sysMatrixAux[1:numNodes-1,:] = np.multiply(dt,self.sysMatrix[1:numNodes-1,:])
+        sysMatrixAux[1:numNodes-1,:] = np.multiply(dt,sysMatrix[1:numNodes-1,:])
         sysMatrixAux[1:numNodes-1,1:numNodes-1] = identity - sysMatrixAux[1:numNodes-1,1:numNodes-1]
         sysMatrix[1:numNodes-1,:] = sysMatrixAux[1:numNodes-1,:]
-        sysMatrix[1:numNodes-2,0] = -sysMatrix[1:numNodes-2,0]
-        sysMatrix[1:numNodes-1:,numNodes-1] = -sysMatrix[1:numNodes-1:,numNodes-1]
+        sysMatrix[1:numNodes-2,0] = -sysMatrixAux[1:numNodes-2,0]
+        sysMatrix[1:numNodes-1:,numNodes-1] = -sysMatrixAux[1:numNodes-1:,numNodes-1]
         self.dudt = sysMatrix
 
     def solve(self, tf, initialCondition):
@@ -145,12 +148,12 @@ class PDDO:
         BC = self.BC
         numTimeSteps =int(tf/dt)
         PDDO.findFamilyMembers(self)
-        PDDO.calcXis(self)
         PDDO.calcSysMatrix(self)
         PDDO.enforceLeftBoundaryConditions(self)
         PDDO.enforceRightBoundaryConditions(self)
         PDDO.calcDuDt(self)
         PDDO.enforceBoundaryConditionsRHS(self, initialCondition)
+        
         RHS = self.RHS
         invDUDT = inv(csc_matrix(self.dudt)).toarray()
         
