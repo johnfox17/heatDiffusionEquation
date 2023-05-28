@@ -14,12 +14,11 @@ L = 10.0
 dx = 0.1
 dt = 0.01
 t0 = 0
-tf = 50
+tf = 250 
 numTimeSteps =int(tf/dt) 
 xCoords = np.arange(-L/2,L/2+dx, dx) #create the discrete x and y grids
 numNodes = len(xCoords)
 kappa = 0.04
-#kappa = 0.1
 kappa2 = 0.1
 
 def calcInitialCondition():
@@ -43,12 +42,13 @@ def main():
     #PDDO Setup
     ##############################
     numNodes = len(xCoords)
-    horizon = 8.015
+    horizon = 15.015
+    #horizon = 3.015
     delta = horizon * dx
     bVec = np.array([0,0,2])
     diffOrder = 2
     numBC = 1
-    BC = np.array([-0.01])
+    BC = np.array([0.01])
     diffOrderBC = np.array([1])
     bVecBC = np.array([0,1,0])
     nodesBC = np.array([numNodes-1])
@@ -66,47 +66,31 @@ def main():
     fd = FD.FD(numNodes, dx, dt, kappa, kappa2, BC)
     fd.solve(tf, initialConditionFD)
 
-
-    figure, axis = plt.subplots()
-    axis.plot(xCoords[1:99], fd.SOL_FD[1:99], marker='*',label='FD')
-    axis.plot(xCoords[1:99], pddo.SOL_PDDO[1:99], marker='*',label='PDDO')
-    axis.grid()
-    axis.legend()
-    axis.set_title('Neumann BC')
-    axis.set_xlabel('x-axis')
-    axis.set_ylabel('Heat Magnitude')
-    plt.show()
     ###############################
     #Calculating absolute error
     ##############################
-    '''RK_timeSteps = len(SOL_FD.t)
-    
-    SOL_FD_tf = np.zeros(numNodes)
-    SOL_FD_tf[1:numNodes-2] = SOL_FD.y[:,RK_timeSteps-1] 
-
-    absError = np.abs(np.subtract(SOL_FD_tf,SOL_PDDO))'''
+    absError = np.abs(np.subtract(fd.SOL_FD,pddo.SOL_PDDO))
     
     ###############################
     #Plotting
     ###############################
-    '''figure, axis = plt.subplots(2,1)  
-    axis[0].plot(xCoords, initialCondition, label='Initial Condition')
-    axis[0].plot(xCoords, SOL_FD_tf, marker='o',label='FD')
-    axis[0].plot(xCoords, SOL_PDDO, marker='*', label='PDDO')
+    figure, axis = plt.subplots(2,1)  
+    axis[0].plot(xCoords[:numNodes-10], fd.SOL_FD[:numNodes-10], marker='o',label='FD')
+    axis[0].plot(xCoords[:numNodes-10], pddo.SOL_PDDO[:numNodes-10], marker='*', label='PDDO')
     axis[0].legend()
     axis[0].grid()
     axis[0].set_xlabel('x-axis')
     axis[0].set_ylabel('Heat Magnitude')
     axis[0].set_title('Heat Diffusion Equation (1.5 sec)')
     
-    axis[1].plot(xCoords,absError, marker='o')
+    axis[1].plot(xCoords[:numNodes-10],absError[:numNodes-10], marker='o')
     axis[1].grid()
     axis[1].set_xlabel('x-axis')
     axis[1].set_ylabel('Absolute Error')
     axis[1].set_title('Absolute Error FD vs PDDO (1.5 sec)')
 
 
-    plt.show()'''
+    plt.show()
 
 
     #a = input('').split(" ")[0]

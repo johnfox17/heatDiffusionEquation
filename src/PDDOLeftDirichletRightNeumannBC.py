@@ -125,17 +125,19 @@ class PDDO:
     
     def calcDuDt(self):
         sysMatrix = self.sysMatrix
+        
         numNodes = self.numNodes
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
         sysMatrixAux = np.zeros([numNodes,numNodes])
         identity = np.identity(numNodes-2)
-        sysMatrixAux[1:numNodes-1,0:numNodes] = np.multiply(dt,self.sysMatrix[1:numNodes-1,0:numNodes])
+        sysMatrixAux[1:numNodes-1,:] = np.multiply(dt,self.sysMatrix[1:numNodes-1,:])
         sysMatrixAux[1:numNodes-1,1:numNodes-1] = identity - sysMatrixAux[1:numNodes-1,1:numNodes-1]
-        sysMatrix[1:numNodes-1,:] = sysMatrixAux[1:numNodes-1,:] 
-        
-        self.dudt = self.sysMatrix
+        sysMatrix[1:numNodes-1,:] = sysMatrixAux[1:numNodes-1,:]
+        sysMatrix[1:numNodes-2,0] = -sysMatrix[1:numNodes-2,0]
+        sysMatrix[1:numNodes-1:,numNodes-1] = -sysMatrix[1:numNodes-1:,numNodes-1]
+        self.dudt = sysMatrix
 
     def solve(self, tf, initialCondition):
         numNodes = self.numNodes
@@ -158,6 +160,4 @@ class PDDO:
             if iTimeStep == numTimeSteps-1:
                 SOL_PDDO = RHS
             initialCondition = self.RHS
-        #print(RHS)
-        #a = input('').split(" ")[0]
         self.SOL_PDDO = SOL_PDDO

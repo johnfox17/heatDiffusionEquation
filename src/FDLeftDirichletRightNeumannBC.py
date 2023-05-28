@@ -25,7 +25,8 @@ class FD:
             +spdiags(data2, 1, numNodes, numNodes ).toarray()
         self.kMat = kMat
 
-    def enforceLeftBoundaryConditions(self, kMat):
+    def enforceLeftBoundaryConditions(self):
+        kMat = self.kMat
         kMat[0,0] = 1 #Dirichlet
         kMat[0,1] = 0
         self.kMat = kMat
@@ -34,8 +35,8 @@ class FD:
         numNodes = self.numNodes
         dx = self.dx
         kMat = self.kMat
-        kMat[numNodes-1, -2] = 2
-        kMat[numNodes-1, -1] = -2
+        kMat[numNodes-1, -2] = -1
+        kMat[numNodes-1, -1] = 1
         self.kMat = kMat
 
     def calcDuDt(self):
@@ -43,14 +44,16 @@ class FD:
         dt = self.dt
         dx = self.dx
         kappa = self.kappa
-        FD.createKMatrix(self)
-        kMat = np.zeros([numNodes,numNodes])
-        FD.enforceRightBoundaryConditions(self)
-        identity = np.identity(numNodes-1)
-        kMat[1:numNodes,0:numNodes] = np.multiply(kappa/dx**2, np.multiply(dt,self.kMat[1:numNodes,0:numNodes]))
-        kMat[1:numNodes,1:numNodes] = identity - kMat[1:numNodes,1:numNodes]
-        FD.enforceLeftBoundaryConditions(self, kMat)
-        self.dudt = self.kMat
+        kMatAux = np.zeros([numNodes,numNodes])
+        identity = np.identity(numNodes-2)
+        kMatAux[1:numNodes-1,:] = np.multiply(kappa/dx**2, np.multiply(dt, self.kMat[1:numNodes-1,:]))
+        kMatAux[1:numNodes-1,1:numNodes-1] = identity - kMatAux[1:numNodes-1,1:numNodes-1]
+        kMatAux[0,:] = self.kMat[0,:]
+        kMatAux[numNodes-1,:] = self.kMat[numNodes-1,:]
+        kMatAux[1,0] = - kMatAux[1,0]
+        kMatAux[numNodes-2,numNodes-1] = - kMatAux[numNodes-2,numNodes-1]
+        
+        self.dudt = kMatAux
 
     def enforceBoundaryConditionsRHS(self, initialCondition):
         dt = self.dt
@@ -58,7 +61,8 @@ class FD:
         BC = self.BC
         kappa = self.kappa
         kappa2 = self.kappa2
-        initialCondition[-1] = 2*kappa*dt*BC/(kappa2*dx)
+        initialCondition[0] = 0
+        initialCondition[-1] = BC*dx/kappa2
         self.RHS = initialCondition
 
 
@@ -66,11 +70,14 @@ class FD:
         numNodes = self.numNodes
         dt = self.dt
         numTimeSteps =int(tf/dt)
+        FD.createKMatrix(self)
 
+        FD.enforceLeftBoundaryConditions(self)
+        FD.enforceRightBoundaryConditions(self)
         FD.calcDuDt(self)
-        invDUDT = inv(csc_matrix(self.dudt)).toarray() 
         FD.enforceBoundaryConditionsRHS(self, initialCondition)
         RHS = self.RHS
+        invDUDT = inv(csc_matrix(self.dudt)).toarray()
         
         for iTimeStep in range(numTimeSteps):
             RHS = np.matmul(invDUDT, RHS)
@@ -78,9 +85,5 @@ class FD:
             if iTimeStep == numTimeSteps-1:
                 SOL_FD = RHS
             RHS = self.RHS
-
-        #np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/solFD.csv', SOL_FD, delimiter=",")
-        #a = input('').split(" ")[0]
-
 
         self.SOL_FD = SOL_FD
