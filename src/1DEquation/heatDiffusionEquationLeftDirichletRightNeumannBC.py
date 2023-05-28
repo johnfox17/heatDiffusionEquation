@@ -75,19 +75,19 @@ def main():
     #Plotting
     ###############################
     figure, axis = plt.subplots(2,1)  
-    axis[0].plot(xCoords[:numNodes-10], fd.SOL_FD[:numNodes-10], marker='o',label='FD')
-    axis[0].plot(xCoords[:numNodes-10], pddo.SOL_PDDO[:numNodes-10], marker='*', label='PDDO')
+    axis[0].plot(xCoords[:numNodes-1], fd.SOL_FD[:numNodes-1], marker='o',label='FD')
+    axis[0].plot(xCoords[:numNodes-1], pddo.SOL_PDDO[:numNodes-1], marker='*', label='PDDO')
     axis[0].legend()
     axis[0].grid()
     axis[0].set_xlabel('x-axis')
     axis[0].set_ylabel('Heat Magnitude')
-    axis[0].set_title('Heat Diffusion Equation (1.5 sec)')
+    axis[0].set_title('Heat Diffusion Equation (250 sec)')
     
-    axis[1].plot(xCoords[:numNodes-10],absError[:numNodes-10], marker='o')
+    axis[1].plot(xCoords[:numNodes-1],absError[:numNodes-1], marker='o')
     axis[1].grid()
     axis[1].set_xlabel('x-axis')
     axis[1].set_ylabel('Absolute Error')
-    axis[1].set_title('Absolute Error FD vs PDDO (1.5 sec)')
+    axis[1].set_title('Absolute Error FD vs PDDO (250 sec)')
 
 
     plt.show()
