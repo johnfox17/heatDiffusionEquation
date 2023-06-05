@@ -9,9 +9,9 @@ l2=1
 N = 100
 dx = l1/N
 dy = l2/N
-dt = dx/100
+dt = dx
 t0 = 0
-tf = 5
+tf = 0.7
 numTimeSteps =int(tf/dt)
 xCoords = np.arange(dx/2,l1, dx) #create the discrete x and y grids
 yCoords = np.arange(dy/2,l2, dy) #create the discrete x and y grids
@@ -33,6 +33,7 @@ def calcInitialCondition():
 
 def main():
     
+    
     ##############################
     #Initial Condition
     ##############################
@@ -41,7 +42,7 @@ def main():
     ##############################
     #PDDO Setup
     ##############################
-    horizon = 15.015
+    horizon = 3.015
     delta = horizon * dx
     bVec00 = np.array([1,0,0,0,0,0])
     bVec20 = np.array([0,0,0,2,0,0])

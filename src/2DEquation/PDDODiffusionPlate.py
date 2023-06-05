@@ -20,14 +20,15 @@ class PDDO:
         self.bVec20 = bVec20
         self.bVec02 = bVec02
         self.boundaries = boundaries
-        self.delta = horizon * dx
+        self.deltax = horizon * dx
+        self.deltay = horizon * dy
 
     def findFamilyMembers(self):
         coords = self.coords
         numNodes = self.numNodes
-        delta = self.delta
+        deltax = self.deltax
         tree = KDTree(coords, leaf_size=2)
-        familyMembers = tree.query_radius(coords, r = delta)
+        familyMembers = tree.query_radius(coords, r = deltax)
         self.familyMembers = familyMembers
 
     def calcXis(self):
@@ -50,7 +51,7 @@ class PDDO:
         self.yXis = yXis
 
 
-    def calcSysMatrix(self):
+    def calcSysMatrix(self, t):
         numNodes = self.numNodes
         familyMembers = self.familyMembers
         dx = self.dx
@@ -60,7 +61,9 @@ class PDDO:
         bVec02 = self.bVec02
         xXis = self.xXis
         yXis = self.yXis
-        delta = self.delta 
+        deltax = self.deltax 
+        deltay = self.deltay
+        deltaMag = np.sqrt(deltax**2 + deltay**2)
         sysMatrix = np.zeros([numNodes + 2, numNodes + 2])#added two BC and 1 IC
         
         #Differential Equation Part
@@ -74,21 +77,30 @@ class PDDO:
                 if currentFamilyMember != iNode:
                     currentXXi = xXi[iFamilyMember]
                     currentYXi = yXi[iFamilyMember]
-                    pList = np.array([1, currentXXi, currentYXi, (currentXXi)**2, (currentYXi)**2,\
-                        currentXXi*currentYXi]) 
-                    weight = np.exp(-4*(np.sqrt(currentXXi**2+currentYXi**2)))
+                    xiMag = np.sqrt(currentXXi**2+currentYXi**2) 
+                    pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                            (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
+                            (currentXXi/deltaMag)*(currentYXi/deltaMag)]) 
+                    weight = np.exp(-4*(xiMag/deltaMag)**2)
                     diffMat += weight*np.outer(pList,pList)*dx*dy
             for iFamilyMember in range(len(family)):
                 currentFamilyMember = family[iFamilyMember]
                 if currentFamilyMember != iNode:
                     currentXXi = xXi[iFamilyMember]
                     currentYXi = yXi[iFamilyMember]
-                    pList = np.array([1, currentXXi, currentYXi, (currentXXi)**2, (currentYXi)**2,\
-                        currentXXi*currentYXi])
-                    weight = np.exp(-4*(np.sqrt(currentXXi**2+currentYXi**2)))
-                    sysMatrix[iNode][ currentFamilyMember] = weight*(np.inner(solve(diffMat,bVec20)\
-                        ,pList)+ np.inner(solve(diffMat,bVec02),pList))*dx*dy
+                    xiMag = np.sqrt(currentXXi**2+currentYXi**2)
+                    pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                            (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
+                            (currentXXi/deltaMag)*(currentYXi/deltaMag)])
+                    weight = np.exp(-4*(xiMag/deltaMag)**2)
+                    sysMatrix[iNode][ currentFamilyMember] = \
+                            weight*(np.inner(solve(diffMat,bVec20), pList) + \
+                            np.inner(solve(diffMat,bVec02),pList) + \
+                            (1+t**2)*np.inner(solve(diffMat,bVec00),pList))*((dx*dy)/deltaMag)**4
+        
         self.sysMatrix = sysMatrix
+        PDDO.enforceXBoundaryConditions(self)
+        PDDO.enforceYBoundaryConditions(self)
 
     def findBoundaryNodes(self):
         boundaries = self.boundaries
@@ -118,7 +130,9 @@ class PDDO:
         yXis = self.yXis
         dx = self.dx
         dy = self.dy
-        delta = self.delta
+        deltax = self.deltax
+        deltay = self.deltay
+        deltaMag = np.sqrt(deltax**2 + deltay**2)
         numBC, numBCNodes = np.shape(yBoundaryNodes)
         
         for iBC in range(numBC):
@@ -133,9 +147,11 @@ class PDDO:
                     if currentFamilyMember != iNode:
                         currentXXi = xXi[iFamilyMember]
                         currentYXi = yXi[iFamilyMember]
-                        pList = np.array([1, currentXXi, currentYXi, (currentXXi)**2, (currentYXi)**2,\
-                            currentXXi*currentYXi])
-                        weight = np.exp(-4*(np.sqrt(currentXXi**2+currentYXi**2)))
+                        xiMag = np.sqrt(currentXXi**2+currentYXi**2)
+                        pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                                (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
+                                (currentXXi/deltaMag)*(currentYXi/deltaMag)])
+                        weight = np.exp(-4*(xiMag/deltaMag)**2)
                         diffMat += weight*np.outer(pList,pList)*dx*dy
 
                 for iFamilyMember in range(len(family)):
@@ -143,9 +159,11 @@ class PDDO:
                     if currentFamilyMember != iNode:
                         currentXXi = xXi[iFamilyMember]
                         currentYXi = yXi[iFamilyMember]
-                        pList = np.array([1, currentXXi, currentYXi, (currentXXi)**2, (currentYXi)**2,\
-                        currentXXi*currentYXi])
-                        weight = np.exp(-4*(np.sqrt(currentXXi**2+currentYXi**2)))
+                        xiMag = np.sqrt(currentXXi**2+currentYXi**2)
+                        pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                                (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
+                                (currentXXi/deltaMag)*(currentYXi/deltaMag)])
+                        weight = np.exp(-4*(xiMag/deltaMag)**2)
                         sysMatrix[numNodes+iBC][ currentFamilyMember] = \
                             weight*(np.inner(solve(diffMat,bVec00) ,pList))*dx*dy
                         sysMatrix[currentFamilyMember][numNodes+iBC] = \
@@ -154,13 +172,21 @@ class PDDO:
 
 
     def enforceBoundaryConditionsRHS(self, RHS, t):
+        numNodes = self.numNodes
         coords = self.coords
         xBoundaryNodes = self.xBoundaryNodes
         yBoundaryNodes = self.yBoundaryNodes
         xBoundaryNodes = xBoundaryNodes.flatten()
+        
+        for iNode in range(numNodes):
+            RHS[iNode] = (2*np.pi**2-t**2-2)*np.exp(-t)*np.sin(np.pi*coords[iNode,0])*\
+                    np.cos(np.pi*coords[iNode,1])
+
         RHS[xBoundaryNodes] = 0       
         RHS[yBoundaryNodes[0]] = np.exp(t)*np.sin(np.pi*coords[yBoundaryNodes[0],0])
         RHS[yBoundaryNodes[1]] = -np.exp(t)*np.sin(np.pi*coords[yBoundaryNodes[1],0])
+        RHS[-1] = 0
+        RHS[-2] = 0
         self.RHS = RHS
 
     def calcDuDt(self):
@@ -184,21 +210,28 @@ class PDDO:
         numTimeSteps =int(tf/dt)
         PDDO.findFamilyMembers(self)
         PDDO.calcXis(self)
-        PDDO.calcSysMatrix(self)
         PDDO.findBoundaryNodes(self)
-        PDDO.enforceXBoundaryConditions(self)
-        PDDO.enforceYBoundaryConditions(self)
-        
-
         RHS = np.append(RHS,0) 
         RHS = np.append(RHS,0)
+        SOL_PDDO = []
+        time = []
         t = 0
-        for i in range(30):
-            t = t + dt
+        for i in range(numTimeSteps):
             PDDO.enforceBoundaryConditionsRHS(self, RHS, t)
+            PDDO.calcSysMatrix(self, t)
             RHS = self.RHS
-            RHS  = RHS + np.multiply(dt,np.matmul(self.sysMatrix, RHS))
-            #np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/aux'+str(i)+'.csv', RHS, delimiter=",")
-        #invDUDT = inv(csc_matrix(self.dudt)).toarray()
-        #a = input('').split(" ")[0]
+            if i==0:
+                SOL_PDDO.append(RHS)
+                time.append(t)
+            else:
+                RHS  = RHS + np.multiply(dt,np.matmul(self.sysMatrix, RHS))
+                SOL_PDDO.append(RHS)
+                time.append(t)
+            t = t + dt
+        SOL_PDDO = np.array(SOL_PDDO)
+        time = np.array(time)
+        np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/SOL_PDDO.csv', SOL_PDDO, delimiter=",")
+        np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/time.csv', time, delimiter=",")
+        print('Done')
+        a = input('').split(" ")[0]
         self.SOL_PDDO = RHS
