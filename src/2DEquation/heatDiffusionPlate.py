@@ -65,7 +65,8 @@ def main():
     pddo.solve(tf, initialCondition)
     
 
-    np.savetxt('/home/doctajfox/Documents/Thesis_Research/heatDiffusionEquation/data/SOL_PDDO.csv', pddo.SOL_PDDO, delimiter=",")
+    np.savetxt('C:\\Users\\docta\\Documents\\Thesis\\heatDiffusionEquation\\data\\SOL_PDDO.csv', pddo.SOL_PDDO, delimiter=",")
+    np.savetxt('C:\\Users\\docta\\Documents\\Thesis\\heatDiffusionEquation\\data\\time.csv', pddo.time, delimiter=",")
     #a = input('').split(" ")[0]
     print('Done')
 
