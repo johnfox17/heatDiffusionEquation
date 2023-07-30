@@ -22,7 +22,8 @@ indexing = 'xy'
 xCoords, yCoords = np.meshgrid(xCoords, yCoords, indexing=indexing)
 xCoords = xCoords.reshape(-1, 1)
 yCoords = yCoords.reshape(-1, 1)
-coords = np.array([np.round(xCoords[:,0],3), np.round(yCoords[:,0],3)]).T
+#coords = np.array([np.round(xCoords[:,0],3), np.round(yCoords[:,0],3)]).T
+coords = np.array([xCoords[:,0], yCoords[:,0]]).T
 numNodes = len(xCoords)
 
 def calcInitialCondition():

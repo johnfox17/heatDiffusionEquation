@@ -75,26 +75,26 @@ class PDDO:
             diffMat = np.zeros([6,6])
             for iFamilyMember in range(len(family)):
                 currentFamilyMember = family[iFamilyMember]
-                if currentFamilyMember != iNode:
-                    currentXXi = xXi[iFamilyMember]
-                    currentYXi = yXi[iFamilyMember]
-                    xiMag = np.sqrt(currentXXi**2+currentYXi**2) 
-                    pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                #if currentFamilyMember != iNode:
+                currentXXi = xXi[iFamilyMember]
+                currentYXi = yXi[iFamilyMember]
+                xiMag = np.sqrt(currentXXi**2+currentYXi**2) 
+                pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
                             (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
                             (currentXXi/deltaMag)*(currentYXi/deltaMag)]) 
-                    weight = np.exp(-4*(xiMag/deltaMag)**2)
-                    diffMat += weight*np.outer(pList,pList)*dx*dy
+                weight = np.exp(-4*(xiMag/deltaMag)**2)
+                diffMat += weight*np.outer(pList,pList)*dx*dy
             for iFamilyMember in range(len(family)):
                 currentFamilyMember = family[iFamilyMember]
-                if currentFamilyMember != iNode:
-                    currentXXi = xXi[iFamilyMember]
-                    currentYXi = yXi[iFamilyMember]
-                    xiMag = np.sqrt(currentXXi**2+currentYXi**2)
-                    pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
+                #if currentFamilyMember != iNode:
+                currentXXi = xXi[iFamilyMember]
+                currentYXi = yXi[iFamilyMember]
+                xiMag = np.sqrt(currentXXi**2+currentYXi**2)
+                pList = np.array([1, currentXXi/deltaMag, currentYXi/deltaMag, \
                             (currentXXi/deltaMag)**2, (currentYXi/deltaMag)**2, \
                             (currentXXi/deltaMag)*(currentYXi/deltaMag)])
-                    weight = np.exp(-4*(xiMag/deltaMag)**2)
-                    sysMatrix[iNode][ currentFamilyMember] = \
+                weight = np.exp(-4*(xiMag/deltaMag)**2)
+                sysMatrix[iNode][ currentFamilyMember] = \
                             weight*(np.inner(solve(diffMat,bVec20), pList) + \
                             np.inner(solve(diffMat,bVec02),pList) + \
                             (1+t**2)*np.inner(solve(diffMat,bVec00),pList))*((dx*dy)/deltaMag**0)#4
@@ -118,8 +118,7 @@ class PDDO:
         yBoundaryNodes = self.yBoundaryNodes
         xBoundaryNodes = xBoundaryNodes.flatten()
         
-
-        initialCondition[xBoundaryNodes] = 0       
+        initialCondition[xBoundaryNodes] = 0
         initialCondition[yBoundaryNodes[0]] = np.exp(-t)*np.sin(np.pi*coords[yBoundaryNodes[0],0]).reshape((21,1))
         initialCondition[yBoundaryNodes[1]] = -np.exp(-t)*np.sin(np.pi*coords[yBoundaryNodes[0],0]).reshape((21,1))
         return initialCondition 
@@ -158,6 +157,7 @@ class PDDO:
         SOL_PDDO = []
         time = []
         t = 0
+        
         for i in range(numTimeSteps+3):
             print(t)
             if i==0:
@@ -170,7 +170,6 @@ class PDDO:
             PDDO.calcDiffEqSysMatrix(self, t)
             PDDO.calcNonHomogenousArray(self, t)
             initialCondition = np.multiply(dt,np.matmul(self.sysMatrix,initialCondition)+self.nonHomogeneousPart) 
-            initialCondition = PDDO.enforceBoundaryConditions(self, initialCondition, t)
             t = t + dt
         self.SOL_PDDO = np.squeeze(np.array(SOL_PDDO))
         self.time = np.array(time)
